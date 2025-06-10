@@ -3,21 +3,16 @@ import json
 
 # === Activation functions ===
 def relu(x):
-    # TODO: Implement the Rectified Linear Unit
     return np.maximum(0, x)
 
 def softmax(x):
-    # TODO: Implement the SoftMax function
-    # Handle 1D arrays
-    if len(x.shape) == 1:
-        x_shifted = x - np.max(x)
-        exp_x = np.exp(x_shifted)
-        return exp_x / np.sum(exp_x)
-    # Handle 2D arrays (batches)
-    else:
-        x_shifted = x - np.max(x, axis=1, keepdims=True)
-        exp_x = np.exp(x_shifted)
-        return exp_x / np.sum(exp_x, axis=1, keepdims=True)
+    max_x = np.max(x, axis=-1, keepdims=True)
+    # 減去最大值，避免指數爆炸
+    exp_x = np.exp(x - max_x)
+    # 計算和
+    sum_exp_x = np.sum(exp_x, axis=-1, keepdims=True)
+    # 返回 softmax 結果
+    return exp_x / sum_exp_x
 
 # === Flatten ===
 def flatten(x):
@@ -38,15 +33,26 @@ def nn_forward_h5(model_arch, weights, data):
         wnames = layer['weights']
 
         if ltype == "Flatten":
-            x = flatten(x)
+            x = x.reshape(x.shape[0], -1)
         elif ltype == "Dense":
-            W = weights[wnames[0]]
-            b = weights[wnames[1]]
-            x = dense(x, W, b)
-            if cfg.get("activation") == "relu":
-                x = relu(x)
-            elif cfg.get("activation") == "softmax":
-                x = softmax(x)
+            if len(wnames) >= 2:
+                # 獲取權重和偏置
+                W = weights[wnames[0]]
+                b = weights[wnames[1]]
+
+                # 線性變換
+                x = np.dot(x, W) + b
+
+                # 應用激活函數
+                activation = cfg.get("activation", "linear")
+                if activation == "relu":
+                    x = relu(x)
+                elif activation == "softmax":
+                    x = softmax(x)
+
+        elif ltype in ["BatchNormalization", "Dropout"]:
+            # 推理時跳過這些層
+            continue
 
     return x
 
