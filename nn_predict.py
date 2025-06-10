@@ -6,13 +6,18 @@ def relu(x):
     return np.maximum(0, x)
 
 def softmax(x):
-    max_x = np.max(x, axis=-1, keepdims=True)
-    # 減去最大值，避免指數爆炸
-    exp_x = np.exp(x - max_x)
-    # 計算和
-    sum_exp_x = np.sum(exp_x, axis=-1, keepdims=True)
-    # 返回 softmax 結果
-    return exp_x / sum_exp_x
+    # 處理一維數組的情況
+    if len(x.shape) == 1:
+        max_x = np.max(x)
+        exp_x = np.exp(x - max_x)
+        sum_exp_x = np.sum(exp_x)
+        return exp_x / sum_exp_x
+    else:
+        # 處理多維數組的情況
+        max_x = np.max(x, axis=-1, keepdims=True)
+        exp_x = np.exp(x - max_x)
+        sum_exp_x = np.sum(exp_x, axis=-1, keepdims=True)
+        return exp_x / sum_exp_x
 
 # === Flatten ===
 def flatten(x):
